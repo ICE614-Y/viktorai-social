@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>維港AI — 社交媒體內容生成器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #0d1f35;
+    --blue: #1a6eb5;
+    --blue-light: #e8f2fc;
+    --blue-mid: #3d8bd4;
+    --accent: #f0a500;
+    --accent-light: #fff8e6;
+    --surface: #f7f9fc;
+    --card: #ffffff;
+    --border: #dde3ec;
+    --text: #1a2233;
+    --text-2: #5a6a80;
+    --text-3: #9aabbf;
+    --success: #1a9e6e;
+    --success-bg: #e6f7f2;
+    --danger: #d94040;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 12px rgba(13,31,53,0.07);
+    --shadow-md: 0 4px 24px rgba(13,31,53,0.11);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans HK', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+  .topbar { background: var(--navy); padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--navy); }
+  .topbar-name { font-size: 14px; font-weight: 500; color: #fff; letter-spacing: 0.02em; }
+  .topbar-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-left: 4px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; margin-right: 6px; }
+  .status-label { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+  .main { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 52px); }
+
+  .sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; max-height: calc(100vh - 52px); position: sticky; top: 52px; }
+  .sidebar-section { margin-bottom: 18px; }
+  .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+
+  select, input[type=text], textarea {
+    width: 100%; padding: 8px 10px; font-size: 13px; font-family: 'Noto Sans HK', sans-serif;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    color: var(--text); transition: border 0.15s, box-shadow 0.15s; outline: none;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,110,181,0.1); }
+
+  .platform-checks { display: flex; flex-direction: column; gap: 6px; }
+  .pcheck { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border 0.12s, background 0.12s; user-select: none; }
+  .pcheck:hover { border-color: var(--blue-mid); background: var(--blue-light); }
+  .pcheck input { width: auto; }
+  .pcheck-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pcheck-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .pcheck-chars { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+
+  .tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tone-btn { padding: 7px 6px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; text-align: center; color: var(--text-2); transition: all 0.12s; }
+  .tone-btn:hover { border-color: var(--blue-mid); color: var(--blue); }
+  .tone-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); font-weight: 500; }
+
+  .gen-btn { width: 100%; padding: 11px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; font-family: 'Noto Sans HK', sans-serif; cursor: pointer; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+  .gen-btn:hover { background: #1560a0; }
+  .gen-btn:active { transform: scale(0.98); }
+  .gen-btn:disabled { background: var(--border); color: var(--text-3); cursor: not-allowed; transform: none; }
+
+  .spin { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .content { padding: 20px; overflow-y: auto; }
+  .tabs { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; background: var(--surface); }
+  .tab { flex: 1; padding: 9px 8px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-2); transition: background 0.12s, color 0.12s; border-right: 1px solid var(--border); }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--card); color: var(--text); }
+  .tab-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+  .panel { display: none; }
+  .panel.active { display: flex; flex-direction: column; gap: 16px; }
+
+  .copy-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+  .copy-card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .platform-badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+  .copy-card-actions { display: flex; gap: 6px; }
+  .action-btn { padding: 5px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); cursor: pointer; color: var(--text-2); font-family: 'Noto Sans HK', sans-serif; transition: all 0.12s; }
+  .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .action-btn.copied { border-color: var(--success); color: var(--success); background: var(--success-bg); }
+  .copy-card-body { padding: 16px; }
+  .copy-textarea { background: transparent; border: 1px solid transparent; width: 100%; font-size: 13.5px; font-family: 'Noto Sans HK', sans-serif; color: var(--text); line-height: 1.75; outline: none; resize: none; border-radius: 6px; padding: 6px; transition: border 0.12s; }
+  .copy-textarea:focus { border-color: var(--border); background: var(--surface); }
+  .copy-meta { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+  .hashtag-display { font-size: 12px; color: var(--blue-mid); }
+  .char-counter { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+  .char-counter.warn { color: var(--accent); }
+  .char-counter.over { color: var(--danger); }
+
+  .image-builder { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+  .image-builder-head { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+  .image-builder-head h3 { font-size: 13px; font-weight: 500; }
+  .image-controls { padding: 16px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .ctrl-group label { display: block; font-size: 11px; color: var(--text-3); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+  .canvas-wrap { padding: 20px; display: flex; align-items: center; justify-content: center; background: #eef1f6; min-height: 300px; }
+  canvas { border-radius: 8px; box-shadow: var(--shadow-md); max-width: 100%; }
+  .image-actions { padding: 12px 16px; display: flex; gap: 8px; border-top: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; align-items: center; }
+  .dl-btn { padding: 7px 14px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); cursor: pointer; color: var(--text); font-family: 'Noto Sans HK', sans-serif; font-weight: 500; transition: all 0.12s; display: flex; align-items: center; gap: 5px; }
+  .dl-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+  .dl-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .dl-btn.primary:hover { background: #1a3a5c; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-3); }
+  .empty-icon { font-size: 36px; margin-bottom: 14px; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; line-height: 1.7; max-width: 320px; margin: 0 auto; }
+
+  .regen-row { display: flex; gap: 6px; margin-top: 6px; }
+  .regen-btn { padding: 8px 14px; background: var(--accent); color: var(--navy); border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans HK', sans-serif; white-space: nowrap; transition: opacity 0.12s; }
+  .regen-btn:hover { opacity: 0.85; }
+  .regen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .error-box { background: #fff0f0; border: 1px solid #ffcccc; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--danger); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">維</div>
+    <span class="topbar-name">維港AI</span>
+    <span class="topbar-sub">社交媒體內容生成器</span>
+  </div>
+  <div>
+    <span class="status-dot"></span>
+    <span class="status-label">已連接伺服器</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">系列選擇</div>
+      <select id="series" onchange="updateTopics()">
+        <option value="teacher">老師系列（60%）</option>
+        <option value="principal">校長視角（20%）</option>
+        <option value="brand">品牌故事（20%）</option>
+      </select>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">題目</div>
+      <select id="topic"></select>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">補充方向（選填）</div>
+      <input type="text" id="extra" placeholder="例：加入數據、針對中學、輕鬆一點..." />
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">語氣風格</div>
+      <div class="tone-grid">
+        <div class="tone-btn active" onclick="setTone(this,'貼地口語')">貼地口語</div>
+        <div class="tone-btn" onclick="setTone(this,'專業權威')">專業權威</div>
+        <div class="tone-btn" onclick="setTone(this,'情感共鳴')">情感共鳴</div>
+        <div class="tone-btn" onclick="setTone(this,'數據導向')">數據導向</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">發布平台</div>
+      <div class="platform-checks">
+        <label class="pcheck">
+          <input type="checkbox" id="chk-fb" checked>
+          <span class="pcheck-dot" style="background:#1877F2"></span>
+          <span class="pcheck-name">Facebook</span>
+          <span class="pcheck-chars">150–200字</span>
+        </label>
+        <label class="pcheck">
+          <input type="checkbox" id="chk-ig" checked>
+          <span class="pcheck-dot" style="background:#C13584"></span>
+          <span class="pcheck-name">Instagram</span>
+          <span class="pcheck-chars">80–100字</span>
+        </label>
+        <label class="pcheck">
+          <input type="checkbox" id="chk-th" checked>
+          <span class="pcheck-dot" style="background:#333"></span>
+          <span class="pcheck-name">Threads</span>
+          <span class="pcheck-chars">50–70字</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Hashtags</div>
+      <input type="text" id="hashtags" value="#AI教育 #香港老師 #維港AI #教育科技" />
+    </div>
+
+    <button class="gen-btn" id="gen-btn" onclick="generate()">
+      <div class="spin" id="spin"></div>
+      <span id="gen-label">AI 生成文案 + 配圖</span>
+    </button>
+
+    <div style="margin-top:14px;">
+      <div class="sidebar-label" style="margin-bottom:6px;">微調指令</div>
+      <div class="regen-row">
+        <input type="text" id="finetune" placeholder="例：語氣更輕鬆、加入數字..." />
+        <button class="regen-btn" id="ft-btn" onclick="finetune()" disabled>修改</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('copy')">
+        <span class="tab-dot" style="background:#1877F2"></span>文案
+      </div>
+      <div class="tab" onclick="switchTab('image')">
+        <span class="tab-dot" style="background:var(--accent)"></span>配圖
+      </div>
+    </div>
+
+    <div class="panel active" id="tab-copy">
+      <div id="copy-content">
+        <div class="empty-state">
+          <div class="empty-icon">&#9998;</div>
+          <div class="empty-title">準備好生成內容</div>
+          <div class="empty-sub">在左側設定系列、題目及語氣風格，按下「AI 生成文案 + 配圖」開始</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="tab-image">
+      <div class="image-builder">
+        <div class="image-builder-head">
+          <h3>社交媒體配圖生成器</h3>
+          <select id="img-format" onchange="renderCanvas()" style="width:auto;padding:5px 8px;font-size:12px;">
+            <option value="fb">Facebook (1200×630)</option>
+            <option value="ig">Instagram 方形 (1080×1080)</option>
+            <option value="ig-story">Instagram Stories (1080×1920)</option>
+          </select>
+        </div>
+        <div class="image-controls">
+          <div class="ctrl-group">
+            <label>背景主題</label>
+            <select id="img-theme" onchange="renderCanvas()">
+              <option value="navy">深藍專業</option>
+              <option value="blue">天藍清新</option>
+              <option value="white">白底簡約</option>
+              <option value="dark">深色現代</option>
+              <option value="warm">暖調紫</option>
+            </select>
+          </div>
+          <div class="ctrl-group">
+            <label>主標題</label>
+            <input type="text" id="img-title" placeholder="帖文標題..." oninput="renderCanvas()" />
+          </div>
+          <div class="ctrl-group">
+            <label>副標題</label>
+            <input type="text" id="img-sub" placeholder="一句話說明..." oninput="renderCanvas()" />
+          </div>
+        </div>
+        <div class="image-controls" style="padding-top:0;border-top:none;grid-template-columns:1fr 1fr;">
+          <div class="ctrl-group">
+            <label>強調數字（選填）</label>
+            <input type="text" id="img-stat" placeholder="例：-40% / 10分鐘" oninput="renderCanvas()" />
+          </div>
+          <div class="ctrl-group">
+            <label>底部標語</label>
+            <input type="text" id="img-cta" value="維港AI教育方案" oninput="renderCanvas()" />
+          </div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="post-canvas"></canvas>
+        </div>
+        <div class="image-actions">
+          <button class="dl-btn primary" onclick="downloadCanvas('current')">下載此尺寸</button>
+          <button class="dl-btn" onclick="downloadAll()">下載全部三個尺寸</button>
+          <div style="flex:1"></div>
+          <span style="font-size:12px;color:var(--text-3)">圖片在本地生成，可直接使用</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOPICS = {
+  teacher: ['AI幫你10分鐘備好一堂課','30份作文批改，AI歸納共同錯誤','AI幫你自動生成三個程度練習題','家長通知信，AI草擬完你改一改就得','會議記錄、報告、計劃書，行政文件一次搞掂','學生個人評語，AI幫你寫初稿再個人化','用AI設計課堂討論問題，學生更投入','數學題批改後，AI自動分析哪個概念最多人不明','英文作文評分，AI對照評分準則逐項分析','考試前複習重點，AI幫你整理成一頁紙'],
+  principal: ['教育局AI方向，你的學校準備好了嗎？','引入AI前，你需要問自己的5個問題','學生濫用AI？三個管理框架幫你釐清邊界','數據私隱、版權、學術誠信——常見問題解答','現有資助計劃點申請？AI教育經費來源整理','引入AI後，老師平均每週省多少時間？','一間學校的真實經歷：從猶豫到全面採用'],
+  brand: ['我們為什麼決定做AI教育','AI會取代老師嗎？我們的答案跟你想的不同','今天去了一間學校，校長說的一句話讓我們沉默了','進校的第一天：我們預料之外的反應','我們試過這個方法，完全行不通——我們學到了什麼','香港教育最需要改變的一件事']
+};
+
+const PC = {
+  fb: { name:'Facebook', color:'#1877F2', bg:'#e8f0fd', limit:250 },
+  ig: { name:'Instagram', color:'#C13584', bg:'#fde8f5', limit:130 },
+  th: { name:'Threads', color:'#333', bg:'#f0f0f0', limit:100 }
+};
+
+const THEMES = {
+  navy:  { bg:['#0d1f35','#1a3a5c'], text:'#ffffff', accent:'#f0a500', sub:'rgba(255,255,255,0.6)', line:'rgba(255,255,255,0.12)' },
+  blue:  { bg:['#1a6eb5','#3d8bd4'], text:'#ffffff', accent:'#fff176', sub:'rgba(255,255,255,0.65)', line:'rgba(255,255,255,0.18)' },
+  white: { bg:['#ffffff','#f0f4fa'], text:'#0d1f35', accent:'#1a6eb5', sub:'#5a6a80', line:'#dde3ec' },
+  dark:  { bg:['#111827','#1f2937'], text:'#f9fafb', accent:'#60a5fa', sub:'rgba(255,255,255,0.55)', line:'rgba(255,255,255,0.09)' },
+  warm:  { bg:['#6d28d9','#a855f7'], text:'#ffffff', accent:'#fbbf24', sub:'rgba(255,255,255,0.65)', line:'rgba(255,255,255,0.18)' }
+};
+
+let tone = '貼地口語';
+let currentCopies = {};
+
+function updateTopics() {
+  const s = document.getElementById('series').value;
+  const sel = document.getElementById('topic');
+  sel.innerHTML = TOPICS[s].map(t => `<option>${t}</option>`).join('');
+}
+
+function setTone(el, t) {
+  tone = t;
+  document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='copy')||(i===1&&tab==='image')));
+  document.getElementById('tab-copy').classList.toggle('active', tab==='copy');
+  document.getElementById('tab-image').classList.toggle('active', tab==='image');
+}
+
+async function callAPI(messages) {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, max_tokens: 2000 })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Server error ' + res.status);
+  }
+  return res.json();
+}
+
+async function generate() {
+  const topic = document.getElementById('topic').value;
+  const extra = document.getElementById('extra').value;
+  const hashtags = document.getElementById('hashtags').value;
+  const series = document.getElementById('series').value;
+  const seriesName = {teacher:'老師系列',principal:'校長視角',brand:'品牌故事'}[series];
+  const platforms = ['fb','ig','th'].filter(p => document.getElementById('chk-'+p).checked);
+  if (!platforms.length) { alert('請至少選擇一個發布平台'); return; }
+
+  setLoading(true);
+  document.getElementById('copy-content').innerHTML = '';
+
+  const prompt = `你是維港AI教育方案的社交媒體文案專家，請生成以下帖文（繁體中文，香港口語）：
+
+系列：${seriesName}
+題目：${topic}
+語氣風格：${tone}
+補充方向：${extra || '無'}
+平台：${platforms.map(p => PC[p].name).join('、')}
+
+規格：
+- Facebook：150至200字，專業資訊性，分點列出，結尾有CTA
+- Instagram：80至100字，精簡有力，配圖感，結尾有CTA
+- Threads：50至70字，輕鬆口語，結尾拋問題
+
+Hashtags（統一）：${hashtags}
+
+只回JSON，不要其他文字：
+{"fb":"...","ig":"...","th":"...","img_title":"10字內短標題","img_sub":"15字內副標題","img_stat":"突出數字或詞語（選填，例如-40%）"}`;
+
+  try {
+    const data = await callAPI([{ role: 'user', content: prompt }]);
+    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    currentCopies = parsed;
+    renderCopies(platforms, parsed, hashtags);
+    document.getElementById('img-title').value = parsed.img_title || topic.slice(0,14);
+    document.getElementById('img-sub').value = parsed.img_sub || '';
+    document.getElementById('img-stat').value = parsed.img_stat || '';
+    renderCanvas();
+    document.getElementById('ft-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('copy-content').innerHTML = `<div class="error-box">生成失敗：${e.message}<br><br>請確認伺服器已正確部署，並已在 Vercel 設定 ANTHROPIC_API_KEY 環境變量。</div>`;
+  }
+  setLoading(false);
+}
+
+async function finetune() {
+  const instruction = document.getElementById('finetune').value.trim();
+  if (!instruction) return;
+  if (!Object.keys(currentCopies).length) { alert('請先生成文案'); return; }
+
+  const platforms = ['fb','ig','th'].filter(p => document.getElementById('chk-'+p).checked);
+  setLoading(true);
+
+  const prompt = `現有文案：
+${JSON.stringify(currentCopies, null, 2)}
+
+微調指令：${instruction}
+
+請修改後只回JSON，格式與原本相同：{"fb":"...","ig":"...","th":"...","img_title":"...","img_sub":"...","img_stat":"..."}`;
+
+  try {
+    const data = await callAPI([{ role: 'user', content: prompt }]);
+    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    currentCopies = parsed;
+    renderCopies(platforms, parsed, document.getElementById('hashtags').value);
+    document.getElementById('img-title').value = parsed.img_title || '';
+    document.getElementById('img-sub').value = parsed.img_sub || '';
+    document.getElementById('img-stat').value = parsed.img_stat || '';
+    renderCanvas();
+    document.getElementById('finetune').value = '';
+  } catch(e) { alert('微調失敗：' + e.message); }
+  setLoading(false);
+}
+
+function renderCopies(platforms, copies, hashtags) {
+  document.getElementById('copy-content').innerHTML = platforms.map(p => {
+    const cfg = PC[p];
+    const text = copies[p] || '';
+    return `<div class="copy-card">
+      <div class="copy-card-head">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="platform-badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.name}</span>
+          <span style="font-size:12px;color:var(--text-3)">建議 ${cfg.limit} 字以內</span>
+        </div>
+        <div class="copy-card-actions">
+          <button class="action-btn" onclick="copyText('${p}',this)">複製文案</button>
+        </div>
+      </div>
+      <div class="copy-card-body">
+        <textarea class="copy-textarea" id="copy-${p}" rows="${p==='th'?4:7}" oninput="updateCounter('${p}')">${text}</textarea>
+      </div>
+      <div class="copy-meta">
+        <span class="hashtag-display">${hashtags}</span>
+        <span class="char-counter" id="cnt-${p}">${text.length} 字</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateCounter(p) {
+  const el = document.getElementById('copy-'+p);
+  const cnt = document.getElementById('cnt-'+p);
+  if (!el||!cnt) return;
+  const len = el.value.length;
+  const lim = PC[p].limit;
+  cnt.textContent = len + ' 字';
+  cnt.className = 'char-counter' + (len > lim*1.3 ? ' over' : len > lim ? ' warn' : '');
+  currentCopies[p] = el.value;
+}
+
+function copyText(p, btn) {
+  const el = document.getElementById('copy-'+p);
+  const full = (el ? el.value : '') + '\n\n' + document.getElementById('hashtags').value;
+  navigator.clipboard.writeText(full).then(() => {
+    btn.textContent = '已複製'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '複製文案'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function renderCanvas() {
+  const fmt = document.getElementById('img-format').value;
+  const theme = document.getElementById('img-theme').value;
+  const title = document.getElementById('img-title').value || '維港AI教育方案';
+  const sub = document.getElementById('img-sub').value || '讓AI把時間還給老師';
+  const stat = document.getElementById('img-stat').value;
+  const cta = document.getElementById('img-cta').value || '維港AI教育方案';
+  const series = document.getElementById('series');
+  const seriesName = series.options[series.selectedIndex].text.split('（')[0];
+
+  const sizes = { fb:[1200,630], ig:[1080,1080], 'ig-story':[1080,1920] };
+  const [W,H] = sizes[fmt];
+  const scale = Math.min(520/W, 380/H);
+  const canvas = document.getElementById('post-canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = Math.round(W*scale)+'px'; canvas.style.height = Math.round(H*scale)+'px';
+
+  const ctx = canvas.getContext('2d');
+  const t = THEMES[theme];
+
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, t.bg[0]); grad.addColorStop(1, t.bg[1]);
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+  ctx.globalAlpha = 0.06;
+  ctx.beginPath(); ctx.arc(W*0.88, H*0.12, H*0.38, 0, Math.PI*2); ctx.fillStyle = t.accent; ctx.fill();
+  ctx.beginPath(); ctx.arc(W*0.08, H*0.88, H*0.22, 0, Math.PI*2); ctx.fillStyle = t.accent; ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = t.accent; ctx.fillRect(W*0.08, H*0.06, W*0.055, 5);
+  ctx.font = `500 ${W*0.02}px 'Noto Sans HK',sans-serif`; ctx.fillStyle = t.accent; ctx.textAlign = 'left';
+  ctx.fillText('維港AI教育方案', W*0.08, H*0.06 + W*0.026);
+
+  ctx.strokeStyle = t.line; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W*0.08, H*0.15); ctx.lineTo(W*0.92, H*0.15); ctx.stroke();
+
+  let contentY = H * 0.25;
+  if (stat) {
+    ctx.font = `700 ${W*0.1}px 'Noto Sans HK',sans-serif`; ctx.fillStyle = t.accent; ctx.textAlign = 'left';
+    ctx.fillText(stat, W*0.08, contentY + W*0.08);
+    contentY += W*0.12;
+  }
+
+  ctx.fillStyle = t.text; ctx.textAlign = 'left';
+  const ts = W * (title.length > 12 ? 0.052 : 0.062);
+  ctx.font = `700 ${ts}px 'Noto Sans HK',sans-serif`;
+  contentY = wrapText(ctx, title, W*0.08, contentY + ts, W*0.84, ts*1.45);
+
+  ctx.fillStyle = t.sub;
+  ctx.font = `400 ${W*0.03}px 'Noto Sans HK',sans-serif`;
+  wrapText(ctx, sub, W*0.08, contentY + W*0.04, W*0.84, W*0.03*1.55);
+
+  const barH = H*0.1;
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(0, H-barH, W, barH);
+  ctx.font = `500 ${W*0.026}px 'Noto Sans HK',sans-serif`; ctx.fillStyle = t.text; ctx.textAlign = 'left';
+  ctx.fillText(cta, W*0.08, H-barH/2+W*0.009);
+  ctx.fillStyle = t.accent; ctx.textAlign = 'right';
+  ctx.font = `500 ${W*0.02}px 'Noto Sans HK',sans-serif`;
+  ctx.fillText(seriesName, W*0.92, H-barH/2+W*0.009);
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const chars = [...text]; let line = '', curY = y;
+  for (const ch of chars) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line,x,curY); line=ch; curY+=lineH; }
+    else line = test;
+  }
+  if (line) ctx.fillText(line,x,curY);
+  return curY;
+}
+
+function downloadCanvas(type) {
+  const topic = document.getElementById('topic').value.slice(0,12);
+  const fmt = document.getElementById('img-format').value;
+  renderCanvas();
+  const link = document.createElement('a');
+  link.download = `維港AI_${fmt}_${topic}.png`;
+  link.href = document.getElementById('post-canvas').toDataURL('image/png');
+  link.click();
+}
+
+function downloadAll() {
+  const fmts = ['fb','ig','ig-story'];
+  const labels = { fb:'Facebook_1200x630', ig:'Instagram_1080x1080', 'ig-story':'Instagram_Stories' };
+  const topic = document.getElementById('topic').value.slice(0,12);
+  const orig = document.getElementById('img-format').value;
+  fmts.forEach((fmt, i) => {
+    setTimeout(() => {
+      document.getElementById('img-format').value = fmt; renderCanvas();
+      const link = document.createElement('a');
+      link.download = `維港AI_${labels[fmt]}_${topic}.png`;
+      link.href = document.getElementById('post-canvas').toDataURL('image/png');
+      link.click();
+    }, i * 350);
+  });
+  setTimeout(() => { document.getElementById('img-format').value = orig; renderCanvas(); }, fmts.length*350+100);
+}
+
+function setLoading(on) {
+  document.getElementById('gen-btn').disabled = on;
+  document.getElementById('spin').style.display = on ? 'block' : 'none';
+  document.getElementById('gen-label').textContent = on ? '生成中...' : 'AI 生成文案 + 配圖';
+}
+
+updateTopics();
+renderCanvas();
+</script>
+</body>
+</html>
