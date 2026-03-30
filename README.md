@@ -16,7 +16,7 @@
 1. 在新建的 repository 頁面，點「uploading an existing file」
 2. 把以下檔案結構上載：
    ```
-   viktorai-app/
+   viktorai-gemini/
    ├── api/
    │   └── generate.js
    ├── public/
