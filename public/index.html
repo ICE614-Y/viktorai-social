@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>維港AI — 社交媒體內容生成器</title>
+<title>維港AI Gemini — 社交媒體內容生成器</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
 
@@ -131,11 +131,11 @@
   <div class="topbar-brand">
     <div class="topbar-logo">維</div>
     <span class="topbar-name">維港AI</span>
-    <span class="topbar-sub">社交媒體內容生成器</span>
+    <span class="topbar-sub">Gemini · 社交媒體內容生成器</span>
   </div>
   <div>
     <span class="status-dot"></span>
-    <span class="status-label">已連接伺服器</span>
+    <span class="status-label">Gemini 後端</span>
   </div>
 </div>
 
@@ -386,7 +386,7 @@ Hashtags（統一）：${hashtags}
     renderCanvas();
     document.getElementById('ft-btn').disabled = false;
   } catch(e) {
-    document.getElementById('copy-content').innerHTML = `<div class="error-box">生成失敗：${e.message}<br><br>請確認伺服器已正確部署，並已在 Vercel 設定 ANTHROPIC_API_KEY 環境變量。</div>`;
+    document.getElementById('copy-content').innerHTML = `<div class="error-box">生成失敗：${e.message}<br><br>請確認伺服器已正確部署，並已在 Vercel 設定 GEMINI_API_KEY 環境變量（可選 GEMINI_MODEL，預設 gemini-2.0-flash）。</div>`;
   }
   setLoading(false);
 }

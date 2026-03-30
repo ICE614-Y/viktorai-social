@@ -36,10 +36,11 @@
 1. 部署完成後，進入 Vercel 項目頁面
 2. 點上方「Settings」→「Environment Variables」
 3. 點「Add New」
-4. Name 填：`ANTHROPIC_API_KEY`
-5. Value 填：你的 Anthropic API Key（sk-ant-...）
-6. 點「Save」
-7. 回到「Deployments」頁面，點「Redeploy」讓設定生效
+4. Name 填：`GEMINI_API_KEY`
+5. Value 填：你的 [Google AI Studio](https://aistudio.google.com/apikey) API Key
+6. （選填）新增 `GEMINI_MODEL`，例如 `gemini-2.0-flash`；不設則使用預設模型
+7. 點「Save」
+8. 回到「Deployments」頁面，點「Redeploy」讓設定生效
 
 ### 第五步：使用
 1. Vercel 會給你一個網址，例如：`https://viktorai-social.vercel.app`
@@ -54,7 +55,7 @@
 答：安全。API Key 存在 Vercel 的伺服器環境變量，不會暴露在瀏覽器或原始碼中。
 
 **問：費用是多少？**
-答：Vercel 免費計劃已足夠（每月100GB流量）。Anthropic API 按使用量收費，每篇文案約 $0.01-0.02 美元。
+答：Vercel 免費計劃已足夠（每月100GB流量）。Google Gemini API 按用量計費，請參考 [Google AI 定價](https://ai.google.dev/pricing)。
 
 **問：團隊其他人可以用嗎？**
 答：可以，把網址發給他們就可以直接用，不需要安裝任何東西。
@@ -68,6 +69,6 @@
 
 | 檔案 | 作用 |
 |------|------|
-| `api/generate.js` | 伺服器端 API，負責安全地調用 Anthropic API |
+| `api/generate.js` | 伺服器端 API，負責安全地調用 Google Gemini API |
 | `public/index.html` | 前端介面，所有功能都在這裡 |
 | `vercel.json` | 告訴 Vercel 如何部署這個項目 |
